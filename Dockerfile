@@ -48,4 +48,4 @@ COPY configuration configuration
 
 ENV APP_ENVIRONMENT production
 # When `docker run` is executed, launch the binary!
-ENTRYPOINT ["./target/release/zero2prod"]
+ENTRYPOINT ["./zero2prod"]
