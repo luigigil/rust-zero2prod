@@ -45,7 +45,10 @@ pub async fn subscribe(
         return HttpResponse::InternalServerError().finish();
     }
 
-    if send_confirmation_email(&email_client, new_subscriber).await.is_err() {
+    if send_confirmation_email(&email_client, new_subscriber)
+        .await
+        .is_err()
+    {
         return HttpResponse::InternalServerError().finish();
     }
 
@@ -71,7 +74,7 @@ pub async fn send_confirmation_email(
         confirmation_link
     );
     email_client
-        .send_email(new_subscriber.email, "Welcome", &html_body, &plain_body)
+        .send_email(new_subscriber.email, "Welcome", html_body, plain_body)
         .await
 }
 

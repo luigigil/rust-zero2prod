@@ -22,7 +22,7 @@ static TRACING: Lazy<()> = Lazy::new(|| {
 pub struct TestApp {
     pub address: String,
     pub db_pool: PgPool,
-    pub email_server: MockServer
+    pub email_server: MockServer,
 }
 
 impl TestApp {
