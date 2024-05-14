@@ -3,7 +3,7 @@ use wiremock::{
     Mock, ResponseTemplate,
 };
 
-use crate::helpers::{spawn_app, ConfirmationLinks};
+use crate::helpers::spawn_app;
 
 #[tokio::test]
 async fn subscribe_sends_a_confirmation_with_a_link() {

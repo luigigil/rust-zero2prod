@@ -1,5 +1,4 @@
 use once_cell::sync::Lazy;
-use reqwest::Request;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use wiremock::MockServer;
 use zero2prod::{
