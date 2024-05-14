@@ -1,7 +1,7 @@
 use actix_web::{web, HttpResponse};
 use chrono::Utc;
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
-use sqlx::{PgPool, Postgres, Transaction, Executor};
+use sqlx::{Executor, PgPool, Postgres, Transaction};
 
 use crate::{
     domain::{NewSubscriber, SubscriberEmail, SubscriberName},
@@ -161,9 +161,7 @@ pub async fn store_token(
         subscriber_id
     );
 
-    transaction.execute(query)
-    .await
-    .map_err(|e| {
+    transaction.execute(query).await.map_err(|e| {
         tracing::error!("Failed to execute query: {:?}", e);
         e
     })?;
