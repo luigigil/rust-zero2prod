@@ -3,6 +3,9 @@ use crate::configuration::Settings;
 use crate::email_client::EmailClient;
 use crate::routes::confirm;
 use crate::routes::health_check;
+use crate::routes::home;
+use crate::routes::login;
+use crate::routes::login_form;
 use crate::routes::publish_newsletter;
 use crate::routes::subscribe;
 
@@ -83,6 +86,9 @@ pub fn run(
             .route("/subscriptions", web::post().to(subscribe))
             .route("/subscriptions/confirm", web::get().to(confirm))
             .route("/newsletters", web::post().to(publish_newsletter))
+            .route("/", web::get().to(home))
+            .route("/login", web::get().to(login_form))
+            .route("/login", web::post().to(login))
             .app_data(db_pool.clone())
             .app_data(email_client.clone())
             .app_data(base_url.clone())
