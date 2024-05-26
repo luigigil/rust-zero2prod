@@ -35,6 +35,7 @@ pub struct ApplicationSettings {
     pub port: u16,
     pub base_url: String,
     pub host: String,
+    pub hmac_secret: Secret<String>,
 }
 
 #[derive(Clone, serde::Deserialize)]
