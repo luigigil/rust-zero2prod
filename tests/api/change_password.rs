@@ -36,7 +36,8 @@ async fn new_password_fields_must_match() {
     app.post_login(&serde_json::json!({
         "username": &app.test_user.username,
         "password": &app.test_user.password
-    })).await;
+    }))
+    .await;
 
     let response = app
         .post_change_password(&serde_json::json!({
@@ -50,7 +51,9 @@ async fn new_password_fields_must_match() {
 
     let html_page = app.get_change_password_html().await;
 
-    assert!(html_page.contains("<p><i>You entered two different new password - the field values must match.</i></p>"));
+    assert!(html_page.contains(
+        "<p><i>You entered two different new password - the field values must match.</i></p>"
+    ));
 }
 
 #[tokio::test]
@@ -62,7 +65,8 @@ async fn current_password_must_be_valid() {
     app.post_login(&serde_json::json!({
         "username": &app.test_user.username,
         "password": &app.test_user.password
-    })).await;
+    }))
+    .await;
 
     let response = app
         .post_change_password(&serde_json::json!({
@@ -78,7 +82,7 @@ async fn current_password_must_be_valid() {
 
     assert!(html_page.contains("<p><i>The current password is incorrect.</i></p>"));
 }
- 
+
 #[tokio::test]
 async fn new_password_must_be_longer_than_12_characters() {
     let app = spawn_app().await;
@@ -87,7 +91,8 @@ async fn new_password_must_be_longer_than_12_characters() {
     app.post_login(&serde_json::json!({
         "username": &app.test_user.username,
         "password": &app.test_user.password
-    })).await;
+    }))
+    .await;
 
     let response = app
         .post_change_password(&serde_json::json!({
@@ -160,9 +165,7 @@ async fn changing_password_works() {
     let html_page = app.get_change_password_html().await;
     assert!(html_page.contains("<p><i>Your password has been changed.</i></p>"));
 
-    let response = app
-        .post_logout()
-        .await;
+    let response = app.post_logout().await;
     assert_is_redirect_to(&response, "/login");
 
     let html_page = app.get_login_html().await;
