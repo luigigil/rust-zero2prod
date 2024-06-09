@@ -39,6 +39,7 @@ base64 = "0.21"
 argon2 = { version = "0.4", features = ["std"] }
 actix-web-flash-messages = { version = "0.4", features = ["cookies"] }
 actix-session = { version = "0.7", features = ["redis-rs-tls-session"] }
+serde_json = "1"
 
 [dependencies.reqwest]
 version = "0.11"
@@ -61,5 +62,4 @@ features = [
 claims = "0.7"
 tokio = { version = "1", features = ["rt", "macros"] }
 wiremock = "0.5"
-serde_json = "1"
 linkify = "0.9"
