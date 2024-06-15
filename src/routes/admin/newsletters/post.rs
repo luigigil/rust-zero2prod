@@ -1,40 +1,58 @@
-use crate::utils::see_other;
-use actix_web::http::header::HeaderValue;
-use actix_web::http::{header, StatusCode};
-use actix_web::{web, HttpResponse, ResponseError};
+use crate::{
+    authentication::UserId,
+    idempotency::{get_saved_response, save_response, IdempotencyKey},
+    utils::{e400, e500, see_other},
+};
+use actix_web::{
+    web::{self, ReqData},
+    HttpResponse,
+};
 use actix_web_flash_messages::FlashMessage;
 use anyhow::Context;
 use sqlx::PgPool;
 
-use crate::authentication::UserId;
-use crate::routes::error_chain_fmt;
 use crate::{domain::SubscriberEmail, email_client::EmailClient};
 
 #[tracing::instrument(
     name = "Publish a newsletter issue",
-    skip(body, pool, email_client, user_id),
+    skip(body, pool, email_client),
     fields(username=tracing::field::Empty, user_id=tracing::field::Empty)
     )]
 pub async fn publish_newsletter(
     body: web::Form<BodyData>,
     pool: web::Data<PgPool>,
     email_client: web::Data<EmailClient>,
-    user_id: web::ReqData<UserId>,
-) -> Result<HttpResponse, PublishError> {
+    user_id: ReqData<UserId>,
+) -> Result<HttpResponse, actix_web::Error> {
     let user_id = user_id.into_inner();
+    let BodyData {
+        title,
+        html,
+        text,
+        idempotency_key,
+    } = body.0;
+    let idempotency_key: IdempotencyKey = idempotency_key.try_into().map_err(e400)?;
 
-    tracing::Span::current().record("user_id", &tracing::field::display(&user_id));
-    let subscribers = get_confirmed_subscribers(&pool).await?;
+    if let Some(saved_response) = get_saved_response(&pool, &idempotency_key, *user_id)
+        .await
+        .map_err(e500)?
+    {
+        FlashMessage::info("The newsletter issue has been published!").send();
+        return Ok(saved_response);
+    }
+
+    let subscribers = get_confirmed_subscribers(&pool).await.map_err(e500)?;
 
     for subscriber in subscribers {
         match subscriber {
             Ok(subscriber) => {
                 email_client
-                    .send_email(&subscriber.email, &body.title, &body.html, &body.text)
+                    .send_email(&subscriber.email, &title, &html, &text)
                     .await
                     .with_context(|| {
                         format!("Failed to send newsletter issue to {}", subscriber.email)
-                    })?;
+                    })
+                    .map_err(e500)?;
             }
             Err(error) => {
                 tracing::warn!(error.cause_chain = ?error,"Skipping a confirmed subscriber. \
@@ -43,8 +61,12 @@ pub async fn publish_newsletter(
         }
     }
 
-    FlashMessage::info("Newsletter successfully sent").send();
-    Ok(see_other("/admin/newsletters"))
+    FlashMessage::info("The newsletter issue has been published!").send();
+    let response = see_other("/admin/newsletters");
+    let response = save_response(&pool, &idempotency_key, *user_id, response)
+        .await
+        .map_err(e500)?;
+    Ok(response)
 }
 
 #[derive(serde::Deserialize)]
@@ -52,6 +74,7 @@ pub struct BodyData {
     title: String,
     html: String,
     text: String,
+    idempotency_key: String,
 }
 
 struct ConfirmedSubscriber {
@@ -81,37 +104,4 @@ async fn get_confirmed_subscribers(
         .collect();
 
     Ok(confirmed_subscribers)
-}
-
-#[derive(thiserror::Error)]
-pub enum PublishError {
-    #[error("Authentication failed")]
-    AuthError(#[source] anyhow::Error),
-
-    #[error(transparent)]
-    UnexpectedError(#[from] anyhow::Error),
-}
-
-impl std::fmt::Debug for PublishError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        error_chain_fmt(self, f)
-    }
-}
-
-impl ResponseError for PublishError {
-    fn error_response(&self) -> HttpResponse {
-        match self {
-            PublishError::UnexpectedError(_) => {
-                HttpResponse::new(StatusCode::INTERNAL_SERVER_ERROR)
-            }
-            PublishError::AuthError(_) => {
-                let mut response = HttpResponse::new(StatusCode::UNAUTHORIZED);
-                let header_value = HeaderValue::from_str(r#"Basic realm="publish""#).unwrap();
-                response
-                    .headers_mut()
-                    .insert(header::WWW_AUTHENTICATE, header_value);
-                response
-            }
-        }
-    }
 }
