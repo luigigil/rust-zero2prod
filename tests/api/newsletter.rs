@@ -138,3 +138,28 @@ async fn you_must_be_logged_in_to_see_the_newsletter_form() {
 
     assert_is_redirect_to(&response, "/login");
 }
+
+#[tokio::test]
+async fn you_must_be_logged_in_to_post_a_newsletter() {
+    let app = spawn_app().await;
+
+    app.post_login(&serde_json::json!({
+        "username": &app.test_user.username,
+        "password": &app.test_user.password,
+    }))
+    .await;
+
+    let response = app
+        .post_newsletters(&serde_json::json!({
+        "title": "Newsletter title",
+        "text": "Newsletter body as plain text",
+        "html": "<p>Newsletter body as HTML</p>"
+            }))
+        .await;
+
+    assert_is_redirect_to(&response, "/admin/newsletters");
+
+    let html = app.get_newsletters_html().await;
+
+    assert!(html.contains("Newsletter successfully sent"));
+}

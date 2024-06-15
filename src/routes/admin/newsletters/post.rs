@@ -1,6 +1,8 @@
+use crate::utils::see_other;
 use actix_web::http::header::HeaderValue;
 use actix_web::http::{header, StatusCode};
 use actix_web::{web, HttpResponse, ResponseError};
+use actix_web_flash_messages::FlashMessage;
 use anyhow::Context;
 use sqlx::PgPool;
 
@@ -41,7 +43,8 @@ pub async fn publish_newsletter(
         }
     }
 
-    Ok(HttpResponse::Ok().finish())
+    FlashMessage::info("Newsletter successfully sent").send();
+    Ok(see_other("/admin/newsletters"))
 }
 
 #[derive(serde::Deserialize)]
