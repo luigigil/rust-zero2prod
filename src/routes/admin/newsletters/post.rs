@@ -28,12 +28,7 @@ pub async fn publish_newsletter(
         match subscriber {
             Ok(subscriber) => {
                 email_client
-                    .send_email(
-                        &subscriber.email,
-                        &body.title,
-                        &body.html,
-                        &body.text,
-                    )
+                    .send_email(&subscriber.email, &body.title, &body.html, &body.text)
                     .await
                     .with_context(|| {
                         format!("Failed to send newsletter issue to {}", subscriber.email)
